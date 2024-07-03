@@ -642,23 +642,33 @@ def jcamp_write(jcamp_dict, linewidth=75):
 
     npts = jcamp_dict.get('npts', len(jcamp_dict['x']))
     js += f"##NPOINTS={npts}\n"
-    js += f"##XFACTOR={jcamp_dict.get('xfactor', 1)}\n"
+
     yfactor = jcamp_dict.get('yfactor', 1)
     js += f"##YFACTOR={yfactor}\n"
-    js += "##XYDATA=(X++(Y..Y))\n"
+    xfactor = jcamp_dict.get('xfactor', 1)
+    js += f"##XFACTOR={xfactor}\n"
 
-    line = f"{jcamp_dict['x'][0]:.6f} "
+    js += "##DATA TABLE=(X++(R..R)), XYDATA\n"
+    js = print_values(jcamp_dict['y'], js, linewidth, npts, yfactor)
+
+    js += "##DATA TABLE=(X++(I..I)), XYDATA\n"
+    js = print_values(jcamp_dict['x'], js, linewidth, npts, xfactor)
+
+    js += '##END=\n'
+    return js
+
+
+def print_values(values, js, linewidth, npts, yfactor):
+    line = f"{values[0]:.6f} "
     for j in arange(npts):
-        if isnan(jcamp_dict['y'][j]):
+        if isnan(values[j]):
             line += '? '
         else:
-            line += f"{jcamp_dict['y'][j] / yfactor:.4f} "
-
-        print(npts-1, j, linewidth, len(line), f'"{line}"')
-        if (len(line) >= linewidth) or (j == npts-1):
+            line += f"{values[j] / yfactor:.4f} "
+        if (len(line) >= linewidth) or (j == npts - 1):
             js += line + '\n'
             if (j < npts-1):
-                line = f"{jcamp_dict['x'][j+1]:.6f} "
+                line = f"{values[j+1]:.6f} "
 
     js += '##END=\n'
     return(js)
