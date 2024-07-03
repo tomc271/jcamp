@@ -174,7 +174,7 @@ def jcamp_read(filehandle):
             # processes numbers whose decimal separator is a comma and not a dot.
             elif is_float(rhs.replace(",", ".", 1)):
                 jcamp_dict[lhs] = float(rhs.replace(",", ".", 1))
-            else:
+            elif not rhs == '(X++(I..I)), XYDATA':
                 jcamp_dict[lhs] = rhs
 
             ## Detect compound files.
@@ -183,7 +183,7 @@ def jcamp_read(filehandle):
                 is_compound = True
                 jcamp_dict['children'] = []
 
-            if (lhs in ('xydata', 'xypoints', 'peak table')):
+            if (lhs in ('xydata', 'xypoints', 'peak table', 'data table')):
                 ## This is a new data entry, reset x and y.
                 x = []
                 y = []
@@ -218,7 +218,7 @@ def jcamp_read(filehandle):
         elif lhs is not None and not datastart:  # multiline entry
             jcamp_dict[lhs] += '\n{}'.format(line.strip())
 
-        if datastart and (datatype == '(X++(Y..Y))'):
+        if datastart and (datatype in ['(X++(Y..Y))', '(X++(R..R))', '(X++(I..I))']):
             ## If the line does not start with '##' or '$$' then it should be a data line.
             ## The pair of lines below involve regex splitting on floating point numbers and integers. We can't just
             ## split on spaces because JCAMP allows minus signs to replace spaces in the case of negative numbers.
@@ -290,6 +290,11 @@ def jcamp_read(filehandle):
         ##          to compress x-values, so decompression of actual x-values is not needed anymore.
         x = linspace(jcamp_dict["firstx"], jcamp_dict["lastx"], jcamp_dict["npoints"])
         y = array([float(yval) for yval in y])
+
+    if ('data table' in jcamp_dict) and (jcamp_dict['data table'] == '(X++(R..R))'):
+        y = array([float(yval) for yval in y])
+        x = array([float(xval) for xval in x])
+
     else:
         x = array([float(xval) for xval in x])
         y = array([float(yval) for yval in y])
